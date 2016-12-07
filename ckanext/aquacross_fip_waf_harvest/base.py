@@ -421,6 +421,40 @@ class FIP_SpatialHarvester(HarvesterBase):
 
         package_dict['extras'] = extras_as_dict
 
+        package_dict['extras'].append(
+            {'key': 'Dataset language', 'value': iso_values.get('dataset-language')}
+        )
+
+        package_dict['extras'].append(
+            {'key': 'Topic category', 'value': iso_values.get('topic-category')}
+        )
+
+        ## customise extra fields
+        i = 0
+        for entry in package_dict['extras']:
+            ## keys:
+            new_key = entry['key'].capitalize()
+            new_key = new_key.replace("-", " ")
+            new_key = new_key.replace("_", " ")
+            package_dict['extras'][i]['key'] = new_key
+
+            ## replace responsible organisation with contact entry
+            if new_key == 'Responsible party':
+                package_dict['extras'][i]['value'] = iso_values.get('contact')
+
+            ## print only spatial type and rename field
+            if new_key == 'Spatial':
+                package_dict['extras'][i]['key'] = 'Spatial data type'
+                spatial_json = json.loads(package_dict['extras'][i]['value'])
+                if spatial_json['type']:
+                    package_dict['extras'][i]['value'] = spatial_json['type']
+            ## values:
+            if type(entry['value']) is str:
+                new_value = entry['value'].translate(None, '[]{}"')
+                package_dict['extras'][i]['value'] = new_value
+
+            i += 1
+
         return package_dict
 
     def transform_to_iso(self, original_document, original_format, harvest_object):
