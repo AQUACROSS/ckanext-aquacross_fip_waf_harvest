@@ -941,11 +941,15 @@ class ISODocument(MappedXmlDocument):
 
     def infer_contact(self, values):
         value = ''
+        role=''
+
         for responsible_party in values['responsible-organisation']:
             value = responsible_party['organisation-name']
+            role = responsible_party['role']
             if value:
                 break
         values['contact'] = value
+        values['role'] = role
 
     def infer_contact_email(self, values):
         value = ''

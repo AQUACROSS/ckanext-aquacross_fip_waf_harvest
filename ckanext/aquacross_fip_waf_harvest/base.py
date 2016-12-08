@@ -421,36 +421,89 @@ class FIP_SpatialHarvester(HarvesterBase):
 
         package_dict['extras'] = extras_as_dict
 
-        package_dict['extras'].append(
-            {'key': 'Dataset language', 'value': iso_values.get('dataset-language')}
-        )
+        #pattern = r'[\{\}]'
+        dataset_lang = iso_values.get('dataset-language')
+        topic_cat = iso_values.get('topic-category')
 
-        package_dict['extras'].append(
-            {'key': 'Topic category', 'value': iso_values.get('topic-category')}
-        )
 
+
+
+        if ( type(dataset_lang) is str):
+            package_dict['extras'].append(
+                {'key': 'Dataset language', 'value': dataset_lang}
+            )
+
+        else:
+            package_dict['extras'].append(
+            {'key': 'Dataset language', 'value': str(dataset_lang)}
+            )
+
+        if (type(topic_cat) is str):
+            package_dict['extras'].append(
+                {'key': 'Topic category', 'value': topic_cat}
+            )
+        else:
+            package_dict['extras'].append(
+                {'key': 'Topic category', 'value': str(topic_cat)}
+            )
+        print "iso:",iso_values
         ## customise extra fields
         i = 0
         for entry in package_dict['extras']:
             ## keys:
-            new_key = entry['key'].capitalize()
-            new_key = new_key.replace("-", " ")
-            new_key = new_key.replace("_", " ")
-            package_dict['extras'][i]['key'] = new_key
+            #spatial must not be modified for spatial search
+            new_key=''
+            if  entry['key'] not in 'spatial':
+                new_key = entry['key'].capitalize()
+                new_key = new_key.replace("-", " ")
+                new_key = new_key.replace("_", " ")
+                package_dict['extras'][i]['key'] = new_key
 
             ## replace responsible organisation with contact entry
             if new_key == 'Responsible party':
                 package_dict['extras'][i]['value'] = iso_values.get('contact')
-
+                package_dict['extras'].append(
+                    {'key': 'Responsible party role', 'value': iso_values.get('role')}
+                )
             ## print only spatial type and rename field
-            if new_key == 'Spatial':
-                package_dict['extras'][i]['key'] = 'Spatial data type'
+            if entry['key'] == 'spatial':
+
+
+
                 spatial_json = json.loads(package_dict['extras'][i]['value'])
+
                 if spatial_json['type']:
-                    package_dict['extras'][i]['value'] = spatial_json['type']
+                    package_dict['extras'].append(
+                       {'key': 'Spatial data type', 'value': spatial_json['type']}
+                    )
+
+            if new_key =='Dataset reference date':
+
+                dataset_json = json.loads(package_dict['extras'][i]['value'])
+
+
+
+                if ( ( len(dataset_json) > 0 ) and (type(dataset_json[0]) is dict) ):
+                    print "ds_date",dataset_json[0]['value']
+                    print "ds_type",dataset_json[0]['type']
+                    if dataset_json[0]['value']:
+                        package_dict['extras'][i]['value'] = dataset_json[0]['value']
+
+                    if dataset_json[0]['type']:
+                        package_dict['extras'].append(
+                            {'key': 'Dataset reference type', 'value': dataset_json[0]['type']}
+                        )
+
+
             ## values:
-            if type(entry['value']) is str:
-                new_value = entry['value'].translate(None, '[]{}"')
+            if (type(entry['value']) is str) and (entry['key'] not in 'spatial') :
+
+
+                new_value = entry['value']
+                patt = r'[\{\}\[\]\'\"]'
+                new_value = re.sub(patt,'',new_value)
+
+                new_value = re.sub(r'principalInvestigator','Principal Investigator',new_value)
                 package_dict['extras'][i]['value'] = new_value
 
             i += 1
@@ -538,7 +591,6 @@ class FIP_SpatialHarvester(HarvesterBase):
 
         # Parse ISO document
         try:
-
             iso_parser = ISODocument(harvest_object.content)
             iso_values = iso_parser.read_values()
         except Exception, e:
