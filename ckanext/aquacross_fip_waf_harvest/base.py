@@ -446,7 +446,8 @@ class FIP_SpatialHarvester(HarvesterBase):
             package_dict['extras'].append(
                 {'key': 'Topic category', 'value': str(topic_cat)}
             )
-        print "iso:",iso_values
+        # print "iso:",iso_values
+        
         ## customise extra fields
         i = 0
         for entry in package_dict['extras']:
